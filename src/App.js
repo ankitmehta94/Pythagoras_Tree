@@ -4,6 +4,13 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { a, useSpring, config } from "@react-spring/three";
 import "./styles.css";
+import {
+  useMatcapTexture,
+  Text,
+  useTexture,
+  MeshReflectorMaterial,
+} from "@react-three/drei";
+import NORM from "./NORM.jpeg";
 
 const edge_w = 1.0;
 const edge_h = 1.5;
@@ -11,6 +18,28 @@ const levels = 15;
 const maxMeshCount = totalMeshCount(levels);
 const color = new THREE.Color("rgb(153,90,0)");
 
+function Info() {
+  <Text
+    color={"#EC2D2D"}
+    fontSize={12}
+    maxWidth={200}
+    lineHeight={1}
+    letterSpacing={0.02}
+    textAlign={"left"}
+    font="https://fonts.gstatic.com/s/raleway/v14/1Ptrg8zYS_SKggPNwK4vaqI.woff"
+    anchorX="center"
+    anchorY="middle"
+    outlineWidth={2}
+    outlineColor="red"
+  >
+    LOREM IPSUM DOLOR SIT AMET, CONSECTETUR ADIPISCING ELIT, SED DO EIUSMOD
+    TEMPOR INCIDIDUNT UT LABORE ET DOLORE MAGNA ALIQUA. UT ENIM AD MINIM VENIAM,
+    QUIS NOSTRUD EXERCITATION ULLAMCO LABORIS NISI UT ALIQUIP EX EA COMMODO
+    CONSEQUAT. DUIS AUTE IRURE DOLOR IN REPREHENDERIT IN VOLUPTATE VELIT ESSE
+    CILLUM DOLORE EU FUGIAT NULLA PARIATUR. EXCEPTEUR SINT OCCAECAT CUPIDATAT
+    NON PROIDENT, SUNT IN CULPA QUI OFFICIA DESERUNT MOLLIT ANIM ID EST LABORUM.
+  </Text>;
+}
 function totalMeshCount(count) {
   let sum = 0;
   for (let index = 0; index < count; index++) {
@@ -111,15 +140,17 @@ const CameraController = () => {
 };
 const Floor = () => {
   return (
-    <mesh receiveShadow rotation={[5, 0, 0]} position={[0, -1.5, 0]}>
-      <planeBufferGeometry attach="geometry" args={[500, 500]} />
-      <meshPhysicalMaterial clearcoat={1} attach="material" color="#212529" />
+    <mesh position={[0, -1.1, 0]} rotation={[Math.PI / -2, 0, 0]}>
+      <planeGeometry args={[200, 200, 75, 75]} />
+      <meshBasicMaterial wireframe color="red" side={THREE.DoubleSide} />
     </mesh>
   );
 };
 function Tree(props) {
   // This reference gives us direct access to the THREE.Mesh object
   const ref = useRef();
+  const [bronzeShine] = useMatcapTexture(111, 1024);
+  const [matcapTexture] = useMatcapTexture(117, 1024);
   useFrame(({ clock: { elapsedTime } }) => {
     // console.log(elapsedTime, "elapsedTime");
     if (elapsedTime % 3 === 0) {
@@ -130,15 +161,17 @@ function Tree(props) {
   const [active, setActive] = useState(0.01);
   const [lev, setLev] = useState(3);
   const { scale } = useSpring({
-    scale: active
+    scale: active,
     // config: config.wobbly
   });
+  const [hovered, setHover] = useState(false);
   console.log(lev);
   useEffect(() => {
     const baseMatrix = new THREE.Matrix4();
     // baseMatrix.makeTranslation(0, -125, 0);
     baseMatrix.setPosition(0, 0, 0);
     ref.current.setMatrixAt(0, baseMatrix);
+    ref.current.setColorAt(0, color);
     createNewMesh(0, ref, color);
 
     ref.current.instanceMatrix.needsUpdate = true;
@@ -147,17 +180,47 @@ function Tree(props) {
   }, [ref]);
 
   return (
-    <a.instancedMesh scale={scale} args={[null, null, 1000]} ref={ref}>
+    <a.instancedMesh
+      scale={scale}
+      args={[null, null, 1000]}
+      position={[0, 0, -1]}
+      ref={ref}
+      onPointerOver={() => setHover(true)}
+      onPointerOut={() => setHover(false)}
+    >
       <boxGeometry args={[edge_w, edge_h, edge_w]} />
-      <meshPhongMaterial color={color} />
+      <meshMatcapMaterial matcap={hovered ? matcapTexture : bronzeShine} />
     </a.instancedMesh>
   );
 }
 const Wall = () => {
+  const normal = useTexture(NORM);
+  const normalScale = 0.5;
+  const _normalScale = React.useMemo(
+    () => new THREE.Vector2(normalScale || 0),
+    [normalScale]
+  );
   return (
-    <mesh receiveShadow position={[0, -1, -5]}>
-      <planeBufferGeometry attach="geometry" args={[500, 500]} />
-      <meshStandardMaterial attach="material" color="#383D43" />
+    <mesh rotation={[0, 0, Math.PI / 2]} position={[0, 5, -6]}>
+      <planeGeometry args={[10, 10]} />
+      <MeshReflectorMaterial
+        resolution={1024}
+        mirror={0.75}
+        mixBlur={10}
+        mixStrength={2}
+        blur={blur || [0, 0]}
+        minDepthThreshold={0.8}
+        maxDepthThreshold={1.2}
+        depthScale={0}
+        depthToBlurRatioBias={0.2}
+        debug={0}
+        distortion={0}
+        color="#a0a0a0"
+        metalness={0.5}
+        roughness={1}
+        normalMap={normal}
+        normalScale={_normalScale}
+      />
     </mesh>
   );
 };
@@ -166,8 +229,9 @@ export default function App() {
     <Canvas>
       <CameraController />
       <ambientLight />
-      <pointLight position={[20, 35, 30]} />
+      <directionalLight position={[1, 1, 1]} castShadow={true} />
       <Tree />
+      <Info />
       <Floor />
       <Wall />
     </Canvas>
