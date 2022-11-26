@@ -131,7 +131,7 @@ const createNewMesh = (index, ref, color, lev) => {
 function Ground(props) {
   const [floor, normal] = useTexture([NORM, NORM]);
   return (
-    <Reflector resolution={1024} args={[100, 100]} {...props}>
+    <Reflector resolution={1024} args={[50, 50]} {...props}>
       {(Material, props) => (
         <Material
           color="#f0f0f0"
@@ -147,15 +147,19 @@ function Ground(props) {
 }
 const CameraController = ({ minZoom, maxZoom }) => {
   const { camera, gl } = useThree();
+  // camera.near = 5;
+  // camera.far = 10;
+  // camera.lookAt(0, 0, 0);
   useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement);
 
+    controls.enableZoom = false;
     controls.minDistance = 20;
     controls.minZoom = minZoom;
     controls.maxPolarAngle = Math.PI / 2;
     controls.minPolarAngle = 0;
-    controls.minAzimuthAngle = -Math.PI / 2;
-    controls.maxAzimuthAngle = Math.PI / 8;
+    controls.minAzimuthAngle = Math.PI / 9;
+    controls.maxAzimuthAngle = Math.PI / 2.5;
     controls.maxZoom = maxZoom;
     return () => {
       controls.dispose();
@@ -163,14 +167,7 @@ const CameraController = ({ minZoom, maxZoom }) => {
   }, [camera, gl]);
   return null;
 };
-const Floor = () => {
-  return (
-    <mesh position={[0, -1.1, 0]} rotation={[Math.PI / -2, 0, 0]}>
-      <planeGeometry args={[200, 200, 75, 75]} />
-      <meshBasicMaterial wireframe color="red" side={THREE.DoubleSide} />
-    </mesh>
-  );
-};
+
 function Tree(props) {
   // This reference gives us direct access to the THREE.Mesh object
   const ref = useRef();
@@ -227,7 +224,7 @@ const WallRight = ({ x = 7, y = 5, z = -1.2, s }) => {
       <planeGeometry args={[s, s]} />
       <MeshReflectorMaterial
         resolution={1024}
-        mirror={0.75}
+        mirror={0.5}
         mixBlur={10}
         mixStrength={2}
         blur={blur || [0, 0]}
@@ -259,7 +256,7 @@ const WallLeft = ({ x = 7, y = 5, z = -1.2, s }) => {
       <planeGeometry args={[s, s]} width={100} height={100} />
       <MeshReflectorMaterial
         resolution={1024}
-        mirror={0.75}
+        mirror={0.5}
         mixBlur={10}
         mixStrength={2}
         blur={blur || [0, 0]}
@@ -279,30 +276,34 @@ const WallLeft = ({ x = 7, y = 5, z = -1.2, s }) => {
     </mesh>
   );
 };
-// TODO: Texture on side of planee
-// TODO: BLock Camera Angles that are viewable
 // TODO: On Load Zoom is fixed
-// TODO: Ground is same as wall and reflective
+// TODO: Sepeate components into files
 // TODO: Add hovering text
 export default function App() {
   const [opts, setOpts] = useState({
-    l_x: 26,
-    l_y: 5,
-    l_z: -7.8,
-    r_x: -6.8,
-    r_y: 36.4,
-    r_z: -29.3,
-    r_s: 100,
-    l_s: 100,
-    minZoom: 12,
-    maxZoom: 12,
+    l_x: -25.1,
+    l_y: 23.2,
+    l_z: -0.4,
+    r_x: -0.4,
+    r_y: 23.2,
+    r_z: -25.1,
+    r_s: 50,
+    l_s: 50,
+    light_x: 7,
+    light_y: 7,
+    light_z: 7,
+    minZoom: 30,
+    maxZoom: 50,
   });
   return (
     <>
       <Canvas>
         <CameraController minZoom={opts.minZoom} Zoom={opts.Zoom} />
         <ambientLight />
-        <directionalLight position={[1, 1, 1]} castShadow={true} />
+        <directionalLight
+          position={[opts.light_x, opts.light_y, opts.light_z]}
+          castShadow={true}
+        />
         <Tree />
         <Info />
         <Ground
@@ -326,6 +327,9 @@ export default function App() {
         <DatNumber path="r_y" min={-50} max={50} step={0.1} />
         <DatNumber path="r_z" min={-50} max={50} step={0.1} />
         <DatNumber path="r_s" min={0} max={100} step={0.1} />
+        <DatNumber path="light_x" min={-100} max={100} step={0.1} />
+        <DatNumber path="light_y" min={-100} max={100} step={0.1} />
+        <DatNumber path="light_z" min={-100} max={100} step={0.1} />
         <DatNumber path="minZoom" min={0} max={50} step={0.1} />
         <DatNumber path="maxZoom" min={0} max={50} step={0.1} />
       </DatGui>
