@@ -1,9 +1,15 @@
-import React, { useRef, useCallback, useEffect, useState } from "react";
+import React, {
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+  useLayoutEffect,
+} from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { a, useSpring } from "@react-spring/three";
-import DatGui, { DatNumber } from "react-dat-gui";
+import DatGui, { DatColor, DatNumber, DatButton } from "react-dat-gui";
 import "./styles.css";
 import {
   useMatcapTexture,
@@ -19,7 +25,6 @@ const edge_w = 1.0;
 const edge_h = 1.5;
 const levels = 15;
 const maxMeshCount = totalMeshCount(levels);
-const color = new THREE.Color("rgb(153,90,0)");
 
 function Info() {
   <Text
@@ -50,7 +55,6 @@ function totalMeshCount(count) {
   }
   return sum;
 }
-// TODO: Add floor texture
 
 const createNewMesh = (index, ref, color, lev) => {
   if (index < maxMeshCount) {
@@ -131,7 +135,7 @@ const createNewMesh = (index, ref, color, lev) => {
 function Ground(props) {
   const [floor, normal] = useTexture([NORM, NORM]);
   return (
-    <Reflector resolution={1024} args={[50, 50]} {...props}>
+    <Reflector resolution={1024} args={[60, 60]} {...props}>
       {(Material, props) => (
         <Material
           color="#f0f0f0"
@@ -145,34 +149,13 @@ function Ground(props) {
     </Reflector>
   );
 }
-const CameraController = ({ minZoom, maxZoom }) => {
-  const { camera, gl } = useThree();
-  // camera.near = 5;
-  // camera.far = 10;
-  // camera.lookAt(0, 0, 0);
-  useEffect(() => {
-    const controls = new OrbitControls(camera, gl.domElement);
 
-    controls.enableZoom = false;
-    controls.minDistance = 20;
-    controls.minZoom = minZoom;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.minPolarAngle = 0;
-    controls.minAzimuthAngle = Math.PI / 9;
-    controls.maxAzimuthAngle = Math.PI / 2.5;
-    controls.maxZoom = maxZoom;
-    return () => {
-      controls.dispose();
-    };
-  }, [camera, gl]);
-  return null;
-};
-
-function Tree(props) {
+function Tree({ hexColor }) {
   // This reference gives us direct access to the THREE.Mesh object
+  const color = new THREE.Color(hexColor);
   const ref = useRef();
-  const [bronzeShine] = useMatcapTexture(111, 1024);
-  const [matcapTexture] = useMatcapTexture(117, 1024);
+  // const [bronzeShine] = useMatcapTexture(111, 1024);
+  // const [matcapTexture] = useMatcapTexture(117, 1024);
   useFrame(({ clock: { elapsedTime } }) => {
     if (elapsedTime % 3 === 0) {
       setLev(lev + 1);
@@ -208,7 +191,7 @@ function Tree(props) {
       onPointerOut={() => setHover(false)}
     >
       <boxGeometry args={[edge_w, edge_h, edge_w]} />
-      <meshMatcapMaterial matcap={hovered ? matcapTexture : bronzeShine} />
+      <meshMatcapMaterial />
     </a.instancedMesh>
   );
 }
@@ -276,10 +259,30 @@ const WallLeft = ({ x = 7, y = 5, z = -1.2, s }) => {
     </mesh>
   );
 };
-// TODO: On Load Zoom is fixed
+
+const CameraController = ({ opts, cameraRef }) => {
+  useFrame(({ clock: { elapsedTime } }) => {
+    if (elapsedTime < 1)
+      cameraRef.current.object.position.set(18797, 8.615, 17.361);
+  }, []);
+  return (
+    <OrbitControls
+      maxDistance={opts.maxZoom}
+      maxPolarAngle={Math.PI / 2}
+      minPolarAngle={0}
+      minAzimuthAngle={Math.PI / 11}
+      maxAzimuthAngle={Math.PI / 2.5}
+      target={[0, 0, 0]}
+      ref={cameraRef}
+    />
+  );
+};
+
+// TODO: Improve performance
 // TODO: Sepeate components into files
 // TODO: Add hovering text
 export default function App() {
+  const cameraRef = useRef();
   const [opts, setOpts] = useState({
     l_x: -25.1,
     l_y: 23.2,
@@ -287,24 +290,32 @@ export default function App() {
     r_x: -0.4,
     r_y: 23.2,
     r_z: -25.1,
-    r_s: 50,
-    l_s: 50,
+    r_s: 75,
+    l_s: 75,
+    camera_x: 2,
+    camera_y: 0,
+    camera_z: 0,
     light_x: 7,
+    hexColor: "#73532A",
     light_y: 7,
     light_z: 7,
-    minZoom: 30,
-    maxZoom: 50,
+    maxZoom: 27,
+    checkDistance: () => {
+      console.log(cameraRef.current);
+    },
   });
+
   return (
     <>
       <Canvas>
-        <CameraController minZoom={opts.minZoom} Zoom={opts.Zoom} />
+        <CameraController opts={opts} cameraRef={cameraRef} />
+
         <ambientLight />
         <directionalLight
           position={[opts.light_x, opts.light_y, opts.light_z]}
           castShadow={true}
         />
-        <Tree />
+        <Tree hexColor={opts.hexColor} />
         <Info />
         <Ground
           mirror={1}
@@ -319,10 +330,11 @@ export default function App() {
         <WallLeft x={opts.l_x} y={opts.l_y} s={opts.l_s} z={opts.l_z} />
       </Canvas>
       <DatGui data={opts} onUpdate={setOpts}>
+        <DatColor path="hexColor" label="Color" />
         <DatNumber path="l_x" min={-50} max={50} step={0.1} />
         <DatNumber path="l_y" min={-50} max={50} step={0.1} />
         <DatNumber path="l_z" min={-50} max={50} step={0.1} />
-        <DatNumber path="l_s" min={0} max={50} step={0.1} />
+        <DatNumber path="l_s" min={0} max={100} step={0.1} />
         <DatNumber path="r_x" min={-50} max={50} step={0.1} />
         <DatNumber path="r_y" min={-50} max={50} step={0.1} />
         <DatNumber path="r_z" min={-50} max={50} step={0.1} />
@@ -330,8 +342,12 @@ export default function App() {
         <DatNumber path="light_x" min={-100} max={100} step={0.1} />
         <DatNumber path="light_y" min={-100} max={100} step={0.1} />
         <DatNumber path="light_z" min={-100} max={100} step={0.1} />
+        <DatNumber path="camera_x" min={-100} max={100} step={0.1} />
+        <DatNumber path="camera_y" min={-100} max={100} step={0.1} />
+        <DatNumber path="camera_z" min={-100} max={100} step={0.1} />
         <DatNumber path="minZoom" min={0} max={50} step={0.1} />
         <DatNumber path="maxZoom" min={0} max={50} step={0.1} />
+        <DatButton onClick={opts.checkDistance} label="Check Distance" />
       </DatGui>
     </>
   );
