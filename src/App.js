@@ -18,7 +18,6 @@ import {
   MeshReflectorMaterial,
   Reflector,
 } from "@react-three/drei";
-import "react-dat-gui/dist/index.css";
 import NORM from "./NORM.jpeg";
 
 const edge_w = 1.0;
