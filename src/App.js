@@ -5,47 +5,44 @@ import React, {
   useState,
   useLayoutEffect,
 } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame, extend } from "@react-three/fiber";
 import * as THREE from "three";
 import { a, useSpring } from "@react-spring/three";
-import DatGui, { DatColor, DatNumber, DatButton } from "react-dat-gui";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry";
+import DatGui, {
+  DatColor,
+  DatNumber,
+  DatButton,
+  DatFolder,
+} from "react-dat-gui";
 import "./styles.css";
 import {
-  useMatcapTexture,
-  Text,
+  OrbitControls,
   useTexture,
   MeshReflectorMaterial,
   Reflector,
 } from "@react-three/drei";
 import NORM from "./NORM.jpeg";
+import myFont from "./static/fonts/helvetiker_regular.typeface.json";
 
 const edge_w = 1.0;
 const edge_h = 1.5;
 const levels = 15;
 const maxMeshCount = totalMeshCount(levels);
-
+extend({ TextGeometry });
 function Info() {
-  <Text
-    color={"#EC2D2D"}
-    fontSize={12}
-    maxWidth={200}
-    lineHeight={1}
-    letterSpacing={0.02}
-    textAlign={"left"}
-    font="https://fonts.gstatic.com/s/raleway/v14/1Ptrg8zYS_SKggPNwK4vaqI.woff"
-    anchorX="center"
-    anchorY="middle"
-    outlineWidth={2}
-    outlineColor="red"
-  >
-    LOREM IPSUM DOLOR SIT AMET, CONSECTETUR ADIPISCING ELIT, SED DO EIUSMOD
-    TEMPOR INCIDIDUNT UT LABORE ET DOLORE MAGNA ALIQUA. UT ENIM AD MINIM VENIAM,
-    QUIS NOSTRUD EXERCITATION ULLAMCO LABORIS NISI UT ALIQUIP EX EA COMMODO
-    CONSEQUAT. DUIS AUTE IRURE DOLOR IN REPREHENDERIT IN VOLUPTATE VELIT ESSE
-    CILLUM DOLORE EU FUGIAT NULLA PARIATUR. EXCEPTEUR SINT OCCAECAT CUPIDATAT
-    NON PROIDENT, SUNT IN CULPA QUI OFFICIA DESERUNT MOLLIT ANIM ID EST LABORUM.
-  </Text>;
+  const font = new FontLoader().parse(myFont);
+  const textRef = useRef();
+  useFrame(({ clock: { elapsedTime } }) => {
+    if (elapsedTime < 1) textRef.current.geometry.center();
+  }, []);
+  return (
+    <mesh position={[0, 10, 0]} ref={textRef}>
+      <textGeometry args={["Hi Me", { font, size: 1, height: 1 }]} />
+      <meshLambertMaterial attach="material" color={"gold"} />
+    </mesh>
+  );
 }
 function totalMeshCount(count) {
   let sum = 0;
@@ -277,9 +274,10 @@ const CameraController = ({ opts, cameraRef }) => {
   );
 };
 
+// TODO: Add hovering text
+// TODO: Hide Dat.GUI
 // TODO: Improve performance
 // TODO: Sepeate components into files
-// TODO: Add hovering text
 export default function App() {
   const cameraRef = useRef();
   const [opts, setOpts] = useState({
@@ -315,7 +313,7 @@ export default function App() {
           castShadow={true}
         />
         <Tree hexColor={opts.hexColor} />
-        <Info />
+        {/* <Info /> */}
         <Ground
           mirror={1}
           blur={[500, 100]}
@@ -328,25 +326,28 @@ export default function App() {
         <WallRight x={opts.r_x} y={opts.r_y} s={opts.r_s} z={opts.r_z} />
         <WallLeft x={opts.l_x} y={opts.l_y} s={opts.l_s} z={opts.l_z} />
       </Canvas>
+
       <DatGui data={opts} onUpdate={setOpts}>
-        <DatColor path="hexColor" label="Color" />
-        <DatNumber path="l_x" min={-50} max={50} step={0.1} />
-        <DatNumber path="l_y" min={-50} max={50} step={0.1} />
-        <DatNumber path="l_z" min={-50} max={50} step={0.1} />
-        <DatNumber path="l_s" min={0} max={100} step={0.1} />
-        <DatNumber path="r_x" min={-50} max={50} step={0.1} />
-        <DatNumber path="r_y" min={-50} max={50} step={0.1} />
-        <DatNumber path="r_z" min={-50} max={50} step={0.1} />
-        <DatNumber path="r_s" min={0} max={100} step={0.1} />
-        <DatNumber path="light_x" min={-100} max={100} step={0.1} />
-        <DatNumber path="light_y" min={-100} max={100} step={0.1} />
-        <DatNumber path="light_z" min={-100} max={100} step={0.1} />
-        <DatNumber path="camera_x" min={-100} max={100} step={0.1} />
-        <DatNumber path="camera_y" min={-100} max={100} step={0.1} />
-        <DatNumber path="camera_z" min={-100} max={100} step={0.1} />
-        <DatNumber path="minZoom" min={0} max={50} step={0.1} />
-        <DatNumber path="maxZoom" min={0} max={50} step={0.1} />
-        <DatButton onClick={opts.checkDistance} label="Check Distance" />
+        <DatFolder title="Controls" closed>
+          <DatColor path="hexColor" label="Color" />
+          <DatNumber path="l_x" min={-50} max={50} step={0.1} />
+          <DatNumber path="l_y" min={-50} max={50} step={0.1} />
+          <DatNumber path="l_z" min={-50} max={50} step={0.1} />
+          <DatNumber path="l_s" min={0} max={100} step={0.1} />
+          <DatNumber path="r_x" min={-50} max={50} step={0.1} />
+          <DatNumber path="r_y" min={-50} max={50} step={0.1} />
+          <DatNumber path="r_z" min={-50} max={50} step={0.1} />
+          <DatNumber path="r_s" min={0} max={100} step={0.1} />
+          <DatNumber path="light_x" min={-100} max={100} step={0.1} />
+          <DatNumber path="light_y" min={-100} max={100} step={0.1} />
+          <DatNumber path="light_z" min={-100} max={100} step={0.1} />
+          <DatNumber path="camera_x" min={-100} max={100} step={0.1} />
+          <DatNumber path="camera_y" min={-100} max={100} step={0.1} />
+          <DatNumber path="camera_z" min={-100} max={100} step={0.1} />
+          <DatNumber path="minZoom" min={0} max={50} step={0.1} />
+          <DatNumber path="maxZoom" min={0} max={50} step={0.1} />
+          <DatButton onClick={opts.checkDistance} label="Check Distance" />
+        </DatFolder>
       </DatGui>
     </>
   );
