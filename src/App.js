@@ -1,15 +1,8 @@
-import React, {
-  useRef,
-  useCallback,
-  useEffect,
-  useState,
-  useLayoutEffect,
-} from "react";
-import { Canvas, useFrame, extend } from "@react-three/fiber";
+import React, { useRef, useEffect, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { a, useSpring } from "@react-spring/three";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader";
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry";
+import Info from "./Info";
 import DatGui, {
   DatColor,
   DatNumber,
@@ -23,27 +16,13 @@ import {
   MeshReflectorMaterial,
   Reflector,
 } from "@react-three/drei";
-import NORM from "./NORM.jpeg";
-import myFont from "./static/fonts/helvetiker_regular.typeface.json";
+import NORM from "./static/textures/NORM.jpeg";
 
 const edge_w = 1.0;
 const edge_h = 1.5;
 const levels = 15;
 const maxMeshCount = totalMeshCount(levels);
-extend({ TextGeometry });
-function Info() {
-  const font = new FontLoader().parse(myFont);
-  const textRef = useRef();
-  useFrame(({ clock: { elapsedTime } }) => {
-    if (elapsedTime < 1) textRef.current.geometry.center();
-  }, []);
-  return (
-    <mesh position={[0, 10, 0]} ref={textRef}>
-      <textGeometry args={["Hi Me", { font, size: 1, height: 1 }]} />
-      <meshLambertMaterial attach="material" color={"gold"} />
-    </mesh>
-  );
-}
+
 function totalMeshCount(count) {
   let sum = 0;
   for (let index = 0; index < count; index++) {
@@ -280,6 +259,7 @@ const CameraController = ({ opts, cameraRef }) => {
 // TODO: Sepeate components into files
 export default function App() {
   const cameraRef = useRef();
+
   const [opts, setOpts] = useState({
     l_x: -25.1,
     l_y: 23.2,
@@ -313,7 +293,7 @@ export default function App() {
           castShadow={true}
         />
         <Tree hexColor={opts.hexColor} />
-        {/* <Info /> */}
+        <Info cameraRef={cameraRef} />
         <Ground
           mirror={1}
           blur={[500, 100]}
